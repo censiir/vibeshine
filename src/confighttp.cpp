@@ -304,10 +304,55 @@ namespace confighttp {
     response->write(success_ok, output_tree.dump(), headers);
   }
 
+  nlohmann::json default_webrtc_ice_servers() {
+    // STUN servers require no credentials.
+    // TURN host/user/credential are read from env vars at runtime (see .env.example).
+    // If any TURN env var is missing, TURN entries are omitted and only STUN is used.
+    // Override everything with SUNSHINE_WEBRTC_ICE_SERVERS for a fully custom list.
+    auto servers = nlohmann::json::array({
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun.l.google.com:19302"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun1.l.google.com:19302"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun2.l.google.com:19302"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun3.l.google.com:19302"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun4.l.google.com:19302"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun.cloudflare.com:3478"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun.nextcloud.com:3478"})}}),
+      nlohmann::json::object({{"urls", nlohmann::json::array({"stun:stun.stunprotocol.org:3478"})}}),
+    });
+
+    auto turn_host = std::getenv("SUNSHINE_TURN_HOST");
+    auto turn_user = std::getenv("SUNSHINE_TURN_USER");
+    auto turn_cred = std::getenv("SUNSHINE_TURN_CREDENTIAL");
+
+    if (turn_host && *turn_host && turn_user && *turn_user && turn_cred && *turn_cred) {
+      std::string host(turn_host);
+      servers.push_back(nlohmann::json::object({
+        {"urls", nlohmann::json::array({"turn:" + host + ":3478"})},
+        {"username", turn_user},
+        {"credential", turn_cred},
+      }));
+      servers.push_back(nlohmann::json::object({
+        {"urls", nlohmann::json::array({"turn:" + host + ":3478?transport=tcp"})},
+        {"username", turn_user},
+        {"credential", turn_cred},
+      }));
+      servers.push_back(nlohmann::json::object({
+        {"urls", nlohmann::json::array({"turns:" + host + ":5349"})},
+        {"username", turn_user},
+        {"credential", turn_cred},
+      }));
+    }
+    else {
+      BOOST_LOG(info) << "WebRTC: TURN env vars not set; using STUN-only defaults"sv;
+    }
+
+    return servers;
+  }
+
   nlohmann::json load_webrtc_ice_servers() {
     auto env = std::getenv("SUNSHINE_WEBRTC_ICE_SERVERS");
     if (!env || !*env) {
-      return nlohmann::json::array();
+      return default_webrtc_ice_servers();
     }
 
     try {
@@ -319,7 +364,7 @@ namespace confighttp {
       BOOST_LOG(warning) << "WebRTC: invalid SUNSHINE_WEBRTC_ICE_SERVERS: "sv << e.what();
     }
 
-    return nlohmann::json::array();
+    return default_webrtc_ice_servers();
   }
 
   nlohmann::json webrtc_session_to_json(const webrtc_stream::SessionState &state) {
