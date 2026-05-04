@@ -161,7 +161,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-windows.yml
     with:
-      release_commit: ${{ needs.release-candidate.outputs.release_commit || github.sha }}
+      release_commit: ${{ needs.release-candidate.outputs.should_release == 'true' && needs.release-candidate.outputs.release_commit || github.sha }}
       release_version: ${{ needs.release-candidate.outputs.release_version || '0.0.0' }}
       symbol_product_name: Vibeshine
       symbol_release_draft: true
