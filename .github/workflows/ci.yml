@@ -38,6 +38,7 @@ jobs:
         id: release-candidate
         env:
           EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -107,6 +108,11 @@ jobs:
           event_name = os.environ["EVENT_NAME"]
           if event_name != "push":
             skip("Release gate only applies to push events.")
+
+          ref = os.environ.get("GITHUB_REF_VALUE", "")
+          release_branches = {"refs/heads/main", "refs/heads/vibe", "refs/heads/master"}
+          if ref not in release_branches and not ref.startswith("refs/tags/"):
+            skip(f"Release gate only applies to main/vibe branches (got {ref}).")
 
           run("git", "fetch", "--force", "--tags")
 
