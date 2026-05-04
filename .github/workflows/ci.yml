@@ -38,6 +38,7 @@ jobs:
         id: release-candidate
         env:
           EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -108,6 +109,11 @@ jobs:
           if event_name != "push":
             skip("Release gate only applies to push events.")
 
+          ref = os.environ.get("GITHUB_REF_VALUE", "")
+          release_branches = {"refs/heads/main", "refs/heads/vibe", "refs/heads/master"}
+          if ref not in release_branches and not ref.startswith("refs/tags/"):
+            skip(f"Release gate only applies to main/vibe branches (got {ref}).")
+
           run("git", "fetch", "--force", "--tags")
 
           release_tags = set(filter(None, run(
@@ -161,7 +167,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-windows.yml
     with:
-      release_commit: ${{ needs.release-candidate.outputs.release_commit || github.sha }}
+      release_commit: ${{ needs.release-candidate.outputs.should_release == 'true' && needs.release-candidate.outputs.release_commit || github.sha }}
       release_version: ${{ needs.release-candidate.outputs.release_version || '0.0.0' }}
       symbol_product_name: Vibeshine
       symbol_release_draft: true

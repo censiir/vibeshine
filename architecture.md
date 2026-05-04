@@ -664,7 +664,12 @@ Example value:
 ]
 ```
 
-If unset, Sunshine returns an empty list and the browser will rely on host-candidate connectivity only (often sufficient on LAN, insufficient across NAT).
+If unset, Sunshine uses a built-in list of free public servers that covers both STUN and TURN:
+
+- **STUN**: Google (x5), Cloudflare, Nextcloud, Stunprotocol — for standard NAT traversal
+- **TURN**: Open Relay Project (`openrelay.metered.ca`) on ports 80, 443, and 443/TCP — relays traffic through firewalls and symmetric NAT where STUN alone fails
+
+This means internet streaming works out of the box for the vast majority of network topologies. The env var, when set, replaces the defaults entirely — merge manually if you need both custom and default servers.
 
 ### Codec selection and browser capability fallback
 
