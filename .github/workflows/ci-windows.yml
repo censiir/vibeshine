@@ -143,8 +143,40 @@ jobs:
             -WebrtcRepoUrl $env:WEBRTC_REPO_URL `
             -WebrtcRef $env:WEBRTC_BRANCH
 
+      - name: Download prebuilt WebRTC release artifact
+        id: webrtc-prebuilt
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $outDir = $env:WEBRTC_ROOT
+          $include = Join-Path $outDir 'include\libwebrtc.h'
+          $dll     = Join-Path $outDir 'lib\libwebrtc.dll'
+          $imp     = Join-Path $outDir 'lib\libwebrtc.dll.a'
+
+          try {
+            New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+            gh release download webrtc-prebuilt-windows-m125 `
+              --repo $env:GITHUB_REPOSITORY `
+              --pattern 'webrtc-Windows.zip' `
+              --dir $env:TEMP
+            Expand-Archive -Path (Join-Path $env:TEMP 'webrtc-Windows.zip') `
+              -DestinationPath $env:TEMP\webrtc-expand -Force
+            Copy-Item -Recurse -Force `
+              "$env:TEMP\webrtc-expand\webrtc-prebuilt\*" $outDir
+            if ((Test-Path $include) -and (Test-Path $dll) -and (Test-Path $imp)) {
+              Write-Host "Prebuilt WebRTC artifact restored from release."
+              "prebuilt-hit=true" >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+          } catch {
+            Write-Host "No prebuilt release artifact found, will build from source: $_"
+          }
+          "prebuilt-hit=false" >> $env:GITHUB_OUTPUT
+
       - name: Restore WebRTC source cache
         id: restore-webrtc-source
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true'
         uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: |
@@ -154,7 +186,7 @@ jobs:
             ${{ steps.webrtc-cache-keys.outputs.source-restore-prefix }}
 
       - name: Sync WebRTC sources
-        if: steps.restore-webrtc-source.outputs.cache-hit != 'true'
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true' && steps.restore-webrtc-source.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -172,7 +204,7 @@ jobs:
             -Stage Sync
 
       - name: Save WebRTC source cache
-        if: steps.restore-webrtc-source.outputs.cache-hit != 'true'
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true' && steps.restore-webrtc-source.outputs.cache-hit != 'true'
         uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: |
@@ -181,6 +213,7 @@ jobs:
 
       - name: Restore WebRTC output cache
         id: restore-webrtc-output
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true'
         uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: |
@@ -188,6 +221,7 @@ jobs:
           key: ${{ steps.webrtc-cache-keys.outputs.output-key }}
 
       - name: Build WebRTC artifacts
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true'
         shell: pwsh
         env:
           WEBRTC_OUTPUT_CACHE_HIT: ${{ steps.restore-webrtc-output.outputs.cache-hit }}
@@ -230,7 +264,7 @@ jobs:
           }
 
       - name: Save WebRTC output cache
-        if: steps.restore-webrtc-output.outputs.cache-hit != 'true'
+        if: steps.webrtc-prebuilt.outputs.prebuilt-hit != 'true' && steps.restore-webrtc-output.outputs.cache-hit != 'true'
         uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: |
