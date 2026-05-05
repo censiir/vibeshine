@@ -19,6 +19,7 @@ export interface StreamConfig {
   videoPacingSlackMs?: number;
   videoMaxFrameAgeMs?: number;
   videoMaxFrameAgeFrames?: number;
+  iceServers?: RTCIceServer[];
 }
 
 export interface WebRtcSessionInfo {

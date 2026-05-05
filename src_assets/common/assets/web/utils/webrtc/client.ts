@@ -571,8 +571,10 @@ export class WebRtcClient {
     const requestedEncoding = sessionConfig.encoding.toLowerCase();
     const bundlePolicy: RTCBundlePolicy = requestedEncoding === 'hevc' ? 'balanced' : 'max-bundle';
     const rtcpMuxPolicy: RTCRtcpMuxPolicy = requestedEncoding === 'hevc' ? 'negotiate' : 'require';
+    // Allow client-side override of ICE servers for restrictive network environments
+    const iceServers = config.iceServers?.length ? config.iceServers : session.iceServers;
     this.pc = new RTCPeerConnection({
-      iceServers: session.iceServers,
+      iceServers,
       bundlePolicy,
       rtcpMuxPolicy,
     });
