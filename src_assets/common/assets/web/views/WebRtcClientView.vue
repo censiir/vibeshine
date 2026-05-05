@@ -484,6 +484,28 @@
                 </div>
                 <n-switch v-model:value="autoFullscreen" size="small" />
               </div>
+
+              <!-- Custom ICE Servers -->
+              <div class="setting-group">
+                <label class="group-label">Custom ICE Servers</label>
+                <p class="hint">Override default STUN/TURN servers for restrictive networks. Leave empty to use defaults.</p>
+                <n-input
+                  v-model:value="iceServersJson"
+                  type="textarea"
+                  :rows="6"
+                  placeholder='[{"urls":["stun:stun.example.com:3478"]},{"urls":["turn:turn.example.com:3478"],"username":"user","credential":"pass"}]'
+                  class="full-width"
+                  :disabled="isConnected"
+                />
+                <div class="ice-presets">
+                  <button @click="loadIcePreset('default')" class="chip" :disabled="isConnected">
+                    Default STUN
+                  </button>
+                  <button @click="loadIcePreset('clear')" class="chip" :disabled="isConnected">
+                    Clear All
+                  </button>
+                </div>
+              </div>
             </div>
           </details>
         </div>
