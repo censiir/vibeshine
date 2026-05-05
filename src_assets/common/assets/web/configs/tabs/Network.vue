@@ -143,6 +143,16 @@ const effectivePort = computed(() => Number(config.port ?? defaultMoonlightPort)
       v-model="config.video_max_batch_size_kb"
       class="mb-6"
     />
+
+    <ConfigFieldRenderer
+      setting-key="webrtc_ice_servers"
+      v-model="config['webrtc_ice_servers']"
+      :kind="'textarea'"
+      :monospace="true"
+      :autosize="{ minRows: 3, maxRows: 10 }"
+      class="mb-6"
+      placeholder='[{"urls":"stun:23.21.44.90:3478"},{"urls":"turn:23.21.44.90:3478","username":"vibeshine","credential":"..."}]'
+    />
   </div>
 </template>
 

@@ -305,18 +305,21 @@ namespace confighttp {
   }
 
   nlohmann::json load_webrtc_ice_servers() {
-    auto env = std::getenv("SUNSHINE_WEBRTC_ICE_SERVERS");
-    if (!env || !*env) {
+    // Config file takes priority over env var
+    const auto &config_val = config::nvhttp.webrtc_ice_servers;
+    const char *source = config_val.empty() ? std::getenv("SUNSHINE_WEBRTC_ICE_SERVERS") : config_val.c_str();
+
+    if (!source || !*source) {
       return nlohmann::json::array();
     }
 
     try {
-      auto parsed = nlohmann::json::parse(env);
+      auto parsed = nlohmann::json::parse(source);
       if (parsed.is_array()) {
         return parsed;
       }
     } catch (const std::exception &e) {
-      BOOST_LOG(warning) << "WebRTC: invalid SUNSHINE_WEBRTC_ICE_SERVERS: "sv << e.what();
+      BOOST_LOG(warning) << "WebRTC: invalid ICE servers JSON: "sv << e.what();
     }
 
     return nlohmann::json::array();

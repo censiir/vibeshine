@@ -351,6 +351,8 @@
     "encoder_software": "Software",
     "external_ip": "External IP",
     "external_ip_desc": "If no external IP address is given, Vibeshine will automatically detect external IP",
+    "webrtc_ice_servers": "WebRTC ICE Servers",
+    "webrtc_ice_servers_desc": "JSON array of ICE server objects for WebRTC streaming. Each entry may include urls (STUN/TURN URL), username, and credential. Example: [{\"urls\":\"stun:host:3478\"},{\"urls\":\"turn:host:3478\",\"username\":\"u\",\"credential\":\"p\"}]",
     "fec_percentage": "FEC Percentage",
     "fec_percentage_desc": "Percentage of error correcting packets per data packet in each video frame. Higher values can correct for more network packet loss, but at the cost of increasing bandwidth usage.",
     "frame_limiter_fps_limit": "Frame limiter FPS limit",

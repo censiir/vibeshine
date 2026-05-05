@@ -1602,6 +1602,7 @@ namespace config {
     path_f(vars, "credentials_file", config::sunshine.credentials_file);
 
     string_f(vars, "external_ip", nvhttp.external_ip);
+    string_f(vars, "webrtc_ice_servers", nvhttp.webrtc_ice_servers);
     list_prep_cmd_f(vars, "global_prep_cmd", config::sunshine.prep_cmds);
 
     int_f(vars, "update_check_interval", config::sunshine.update_check_interval_seconds);

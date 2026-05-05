@@ -218,6 +218,8 @@ namespace config {
     std::string vibeshine_file_state;
 
     std::string external_ip;
+
+    std::string webrtc_ice_servers;  ///< JSON array of RTCIceServer objects, e.g. [{"urls":"stun:host:3478"},{"urls":"turn:host:3478","username":"u","credential":"p"}]
   };
 
   struct input_t {
