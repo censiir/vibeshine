@@ -3,6 +3,16 @@ name: CI-Windows
 permissions: {}
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_commit:
+        required: false
+        type: string
+        default: ''
+      release_version:
+        required: false
+        type: string
+        default: '0.0.0'
   workflow_call:
     inputs:
       release_commit:
@@ -236,7 +246,6 @@ jobs:
           path: |
             .vibeshine-deps/libwebrtc/out
           key: ${{ steps.webrtc-cache-keys.outputs.output-key }}
-
 
       - name: Upload WebRTC artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0

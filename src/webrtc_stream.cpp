@@ -3016,6 +3016,52 @@ namespace webrtc_stream {
       config.offer_to_receive_audio = state.audio ? 1 : 0;
       config.offer_to_receive_video = state.video ? 1 : 0;
 
+      // Populate server-side ICE servers so Sunshine gathers STUN/TURN candidates.
+      // String storage must outlive the lwrtc_factory_create_peer call below.
+      std::array<std::array<std::string, LWRTC_MAX_ICE_URLS>, LWRTC_MAX_ICE_SERVERS> url_storage {};
+      std::array<std::string, LWRTC_MAX_ICE_SERVERS> user_storage {};
+      std::array<std::string, LWRTC_MAX_ICE_SERVERS> cred_storage {};
+      {
+        const auto &cfg_val = config::nvhttp.webrtc_ice_servers;
+        const char *src = cfg_val.empty() ? std::getenv("SUNSHINE_WEBRTC_ICE_SERVERS") : cfg_val.c_str();
+        if (src && *src) {
+          try {
+            auto ice_json = nlohmann::json::parse(src);
+            int idx = 0;
+            for (const auto &srv : ice_json) {
+              if (idx >= LWRTC_MAX_ICE_SERVERS) break;
+              auto &dst = config.ice_servers[idx];
+              std::memset(&dst, 0, sizeof(dst));
+              int url_idx = 0;
+              if (srv.contains("urls")) {
+                auto add_url = [&](const nlohmann::json &u) {
+                  if (url_idx >= LWRTC_MAX_ICE_URLS || !u.is_string()) return;
+                  url_storage[idx][url_idx] = u.get<std::string>();
+                  dst.urls[url_idx] = url_storage[idx][url_idx].c_str();
+                  url_idx++;
+                };
+                const auto &urls = srv["urls"];
+                if (urls.is_string()) add_url(urls);
+                else if (urls.is_array()) for (const auto &u : urls) add_url(u);
+              }
+              if (srv.contains("username") && srv["username"].is_string()) {
+                user_storage[idx] = srv["username"].get<std::string>();
+                dst.username = user_storage[idx].c_str();
+              }
+              if (srv.contains("credential") && srv["credential"].is_string()) {
+                cred_storage[idx] = srv["credential"].get<std::string>();
+                dst.credential = cred_storage[idx].c_str();
+              }
+              if (url_idx > 0) idx++;
+            }
+            config.ice_server_count = idx;
+            if (idx > 0) BOOST_LOG(debug) << "WebRTC: configured " << idx << " server-side ICE server(s)";
+          } catch (const std::exception &e) {
+            BOOST_LOG(warning) << "WebRTC: failed to parse ICE servers for peer connection: " << e.what();
+          }
+        }
+      }
+
       BOOST_LOG(debug) << "WebRTC: create_peer_connection constraints";
       auto *constraints = create_constraints();
       if (!constraints) {
